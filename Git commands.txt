@@ -1,0 +1,43 @@
+# Ali SAAD 2014
+
+# Create new folder 
+git init
+
+# two important settings
+git config --global user.name 
+git config --global user.email
+
+# Before anything, you should pull from github
+# To do so we need to define ssh keys for secure connection 
+# Method 1: download and install Github desktop (no need for admin privileges)
+# Method 2: manually define ssh keys and add them in Github account
+# (https://help.github.com/articles/generating-ssh-keys)
+
+# Once done, test connection:
+ssh -T git@github.com
+
+### Manage remotes:
+# Check remotes (via verbose):
+git remote -v  
+
+# Add remotes (url is usually like: git@githib.com:username/repo_name):
+git remote add remote_name remote_url
+
+# Change remote url
+git config 	remote.remote_name.url 	new_url
+#or (new way)
+git remote set-url remote_name 	new_url
+
+#and finally workflow:
+#pull from online repo:
+git pull  remote_name  master
+# i think origin is like the default remote, so "git pull" is equivalent to "git pull origin master" ??
+
+#work with files, add then commit locally (dont forget to set-up ur .gitignore so that u can add the files u need only)
+git add .    # there is a "DOT" after add
+git commit -m "my_message of commit"
+
+#then send (push) commits to server
+git push remote_name master
+
+# and we re done !! easy right ?
