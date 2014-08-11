@@ -1,0 +1,81 @@
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,empheq}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{fourier}
+\usepackage[left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm]{geometry}
+\author{Ali SAAD}
+\title{Formulation of Conservation Equations for the Shrinkage-Induced Surface Deformation}
+%====================================================================
+%%%   PACKAGES   %%%
+
+%\usepackage{xcolor}
+\usepackage[dvipsnames]{xcolor} 
+\definecolor{halfgray}{gray}{0.55}
+\definecolor{webgreen}{rgb}{0,.5,0}
+\definecolor{webbrown}{rgb}{.6,0,0}
+\definecolor{Maroon}{cmyk}{0, 0.87, 0.68, 0.32}
+\definecolor{RoyalBlue}{cmyk}{1, 0.50, 0, 0}
+\definecolor{Black}{cmyk}{0, 0, 0, 0}
+
+
+\usepackage[pdftex,hyperfootnotes=false,pdfpagelabels]{hyperref}
+\hypersetup{%
+    %draft,	% = no hyperlinking at all (useful in b/w printouts)
+    colorlinks=true, linktocpage=true, pdfstartpage=3, pdfstartview=FitV,%
+    % uncomment the following line if you want to have black links (e.g., for printing)
+    %colorlinks=false, linktocpage=false, pdfborder={0 0 0}, pdfstartpage=3, pdfstartview=FitV,% 
+    breaklinks=true, pdfpagemode=UseNone, pageanchor=true, pdfpagemode=UseOutlines,%
+    plainpages=false, bookmarksnumbered, bookmarksopen=true, bookmarksopenlevel=1,%
+    hypertexnames=true, pdfhighlight=/O,%nesting=true,%frenchlinks,%
+    urlcolor=webbrown, linkcolor=RoyalBlue, citecolor=webgreen, %pagecolor=RoyalBlue,%
+    %urlcolor=Black, linkcolor=Black, citecolor=Black, %pagecolor=Black,%
+} 
+
+\usepackage{cancel}
+\usepackage{import}
+
+\usepackage{tabularx} % better tables
+	\setlength{\extrarowheight}{3pt} % increase table row height
+\newcommand{\tableheadline}[1]{\multicolumn{1}{c}{\spacedlowsmallcaps{#1}}}
+\newcommand{\myfloatalign}{\centering} % to be used with each float for alignment
+\usepackage{caption}
+\captionsetup{format=hang,font=small}
+%\usepackage{subfig}
+\usepackage{float}
+\usepackage{subcaption}
+
+%\usepackage{minitoc}
+%====================================================================
+%%%   COMMANDS   %%%
+%\renewcommand{matrix}[1]{#1 \rangle} 
+\newcommand{\avg}[1]{\left\langle #1 \right\rangle}
+\newcommand{\brac}[1]{ \left(  #1  \right) } 
+\newcommand{\mtrx}[1]{{\underline{\underline{#1}}} }
+\newcommand\mat[1]{\ensuremath{\underline{#1}}} 
+
+\newcommand\nabvec{\ensuremath{\vec{\nabla}}}
+\newcommand\nabmat{\ensuremath{\mat{\nabla}}}
+\newcommand\temp[1]{\ensuremath{\frac{\partial}{\partial t} \brac{#1} }}
+\newcommand\tempn[1]{\ensuremath{\frac{\partial #1}{\partial t} }}  
+ 
+\newcommand\vit{\ensuremath{\avg{\vec{v}^l}}}  
+\newcommand\strainrate{\ensuremath{\avg{{\dot{\mat{\varepsilon}}}^l}}}
+
+\newcommand\wavg{\ensuremath{\avg{w}}}
+\newcommand\wl{\ensuremath{\avg{w}^l}}
+\newcommand\ws{\ensuremath{\avg{w}^s}}
+\newcommand\rhol{\ensuremath{\rho^l}}
+\newcommand\rhos{\ensuremath{\rho^s}}
+\newcommand\kl{\ensuremath{\kappa^l}}
+\newcommand\ks{\ensuremath{\kappa^s}}
+\newcommand\hl{\ensuremath{h^l}}
+\newcommand\hs{\ensuremath{h^s}}
+\newcommand\gl{\ensuremath{g^l}}
+\newcommand\gs{\ensuremath{g^s}}
+\newcommand\vl{\ensuremath{\vec{v}^l}}
+\newcommand\vs{\ensuremath{\vec{v}^s}}
+\newcommand\norm[1]{\ensuremath{\lVert #1 \rVert}}
+
+\newcommand*\widefbox[1]{\fbox{\hspace{2em}#1\hspace{2em}}}
+%====================================================================
