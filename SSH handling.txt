@@ -1,0 +1,9 @@
+# Under windows, open putty-gen (equivalent to ssh-keygen in linux)
+
+# Click on Generate
+
+# COPY the key in the small window and paste in a file named "authorized_keys"
+# this file will be in the server
+
+# Click on Save Private key
+# this key will be loaded in the client, in putty
