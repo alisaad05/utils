@@ -40,4 +40,7 @@ git commit -m "my_message of commit"
 #then send (push) commits to server
 git push remote_name master
 
+#Make "origin" the default upstream remote branch (use only "Git push")
+git push --set-upstream origin master
+
 # and we re done !! easy right ?
