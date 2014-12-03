@@ -4,11 +4,13 @@ docstring= """
 ************************* Ali SAAD 2014 ***************************
 
 * VTU/PVSM (paraview state) to PNG Utility 
-  + Crop 	..................(needs ImageMagick.exe) 
+  + Crop .....................(needs ImageMagick.exe) 
   + Animation Creator ........(needs mencoder.exe)
 
 * Paraview offscreen script that exports PNG images from simulation
-  results in a seamless and fast way (faster than using GUI).
+  results in a seamless and fast way (faster than using GUI). This
+  is extremely useful for heavy 3D simulations wth big data and la-
+  rge mesh, where Paraview may crash, especially if rendering LateX
 
 * Supports selective data loading, i.e. user can specify the fields
   to process instead of loading all data from the VTU file
@@ -22,19 +24,21 @@ docstring= """
 print docstring
 
 
-# USER DATA (paths, options ...)
+# INPUT OPTIONS (paths, options ...)
 # ==============================
 
 dirname =  "U:\\Intel_Cluster_Cases\\5_SMACS_LS\\"
-foldername = "A_retrait\\"
+foldername = "A_retrait\\"  # A_retrait # B5_boussinesq
 filename = "out_thermique_"
 
 # Time options to determine the correct VTU file names
 t_start=0
 t_end=1001
 frequency_VTU=10
-P0_fields_list = ['Heaviside_M_p0']
-P1_fields_list = ['d_interface', 'd_interface_filtered','Vitesse']
+
+scalar_to_export = 'Vitesse'  # FractionPair # Vitesse # Pression
+min_value = 0.0
+max_value = 5e-5
 
 SHOW_CENTER_AXIS = False
 SHOW_ORIENTATION_AXIS = True
@@ -46,12 +50,16 @@ EXPORT_PNG = 	True	# True # False
 CROP_PNG = 		True	# True # False
 MAKE_ANIMATION=	True	# True # False
 OFFSCREEN_RENDERING = True
-fps=10
+fps=12
 LOW = [800,600]
 HIGH = [1280,1024]
 RESOLUTION = HIGH # LOW #  HIGH
 
 # ==========================================================================================================================
+
+P0_fields_list = []
+#TODO: when the class pvtools will be created, check the number of scalar in this list and create a LUT for each one
+P1_fields_list = [scalar_to_export]
 
 #CUSTOM COLORS
 # ============
@@ -63,14 +71,22 @@ BLACK = [0,0,0]
 # ========
 BlueToRedRainbow = [0.0, 0,0,1, 
                     1.0, 1,0,0]
-RainbowDesaturated = [  0.0	 ,	0.278431, 	0.278431, 	0.858824, 
-						0.143, 	0.0,		0.0, 		0.360784, 
+RainbowDesaturated = [  0.0	 ,	0.28, 		0.28, 		0.86, 
+						0.143, 	0.0,		0.0, 		0.36, 
 						0.285, 	0.0,		1.0, 		1.0, 
-						0.429, 	0.0,		0.501961, 	0.0, 
+						0.429, 	0.0,		0.5, 		0.0, 
 						0.571, 	1.0,		1.0, 		0.0, 
-						0.714, 	1.0,		0.380392, 	0.0, 
-						0.857, 	0.419608,	0.0, 		0.0, 
-						1.0, 	0.878431,	0.301961, 	0.301961 ]
+						0.714, 	1.0,		0.38, 		0.0, 
+						0.857, 	0.42,		0.0, 		0.0, 
+						1.0, 	0.88,		0.3, 		0.3 ]
+RainbowBlendedWhite = [ 0.0	 ,	1,1,1, 
+						0.17, 	0,0,1,
+						0.34, 	0,1,1, 
+						0.5, 	0,1,0,
+						0.67, 	1,1,0,
+						0.84, 	1,0,0,
+						1.0, 	0.88, 0, 1 ]
+						
 """
 Update views, isometric and other routines inpired by MAYAVI's tvtk_scene.py
 """
@@ -148,7 +164,7 @@ if EXPORT_PNG:
 	# ======================
 	if SHOW_TIME :
 		annTime = AnnotateTimeFilter(reader)
-		annTime.Format = 'Time: %1.0f sec'
+		annTime.Format = '$Time: \\hspace{1} %1.0f \\hspace{1} sec$'
 		annTimeDisplay = GetDisplayProperties(annTime, view=view)
 		annTimeDisplay.FontFamily= 'Arial' # Arial # Times # Courier
 		annTimeDisplay.FontSize= 10
@@ -165,36 +181,35 @@ if EXPORT_PNG:
 	# DISPLAY VELOCITY FIELD (ONLY FOR VTU, DO NOT USE FOR STATE FILES)
 	# =================================================================
 	# SHOW SCALAR OR VECTOR
-	min = 1e-9
-	max = 5e-5
-	Vitesse_LUT = GetLookupTableForArray( "Vitesse", 3, 
+	
+	Scalar_LUT = GetLookupTableForArray( scalar_to_export, 3, 
 											Discretize=0, 
-											RGBPoints= BlueToRedRainbow ,   # BlueToRedRainbow # RainbowDesaturated
+											RGBPoints= RainbowBlendedWhite ,   # BlueToRedRainbow (HSV) # RainbowDesaturated (HSV) # RainbowBlendedWhite (RGB)
 											VectorMode='Magnitude', 
 											# NanColor=[0.498039215686275, 0.498039215686275, 0.498039215686275], 
-											ColorSpace='HSV', # RGB # HSV # Lab # Diverging
+											ColorSpace='RGB', # RGB # HSV # Lab # Diverging
 											ScalarRangeInitialized=1.0, 
 											AllowDuplicateScalars=1 
 										)
 
-	data_representation.ColorArrayName = 'Vitesse'
-	data_representation.LookupTable = Vitesse_LUT
+	data_representation.ColorArrayName = scalar_to_export
+	data_representation.LookupTable = Scalar_LUT
 
-	Vitesse_LUT.RescaleTransferFunction(min,max)
-	Vitesse_LUT.LockScalarRange = 1
+	Scalar_LUT.RescaleTransferFunction(min_value, max_value)
+	Scalar_LUT.LockScalarRange = 1
 	
-	Vitesse_LUT.Discretize = 1
-	Vitesse_LUT.NumberOfTableValues = 30
-	# Vitesse_LUT.ColorSpace='RGB' # RGB # HSV # Lab # Diverging
+	Scalar_LUT.Discretize = 1
+	Scalar_LUT.NumberOfTableValues = 50
+	# Scalar_LUT.ColorSpace='RGB' # RGB # HSV # Lab # Diverging
 	Render()
 
 	# SHOW CORRESPONDING SCALAR BAR
 	ScalarBar = CreateScalarBar()
-	ScalarBar = GetScalarBar(Vitesse_LUT, view)
+	ScalarBar = GetScalarBar(Scalar_LUT, view)
 	ScalarBar.Position = [0.75, 0.3] # this is position
 	ScalarBar.Position2 = [0.2, 0.35] # this is size
 	ScalarBar.Orientation = 'Vertical' # Horizontal # Vertical
-	ScalarBar.Title = '$\\langle v^F \\rangle$'
+	ScalarBar.Title = scalar_to_export
 	ScalarBar.TitleBold = 0
 	ScalarBar.TitleItalic = 0
 	ScalarBar.TitleOpacity = 1.0
@@ -203,8 +218,8 @@ if EXPORT_PNG:
 	ScalarBar.TitleJustification = 'Centered' # Centered # Left s# Right
 	ScalarBar.ComponentTitle = '[m/s]'
 	ScalarBar.TitleColor = BLUE
-	ScalarBar.TitleFontSize = 15
-	ScalarBar.AspectRatio = 15 #25
+	ScalarBar.TitleFontSize = 12
+	ScalarBar.AspectRatio = 12 #25
 	# ScalarBar.TextPosition = 'Ticks left/bottom, annotations right/top'
 	ScalarBar.TextPosition = 'Ticks right/top, annotations left/bottom'
 
@@ -228,7 +243,7 @@ if EXPORT_PNG:
 	ScalarBar.RangeLabelFormat = '%2.4e'
 						 
 	GetRenderView().Representations.append(ScalarBar)
-	ScalarBar.LookupTable = Vitesse_LUT
+	ScalarBar.LookupTable = Scalar_LUT
 	print("\nFinished Processing VTU files'")
 
 
@@ -296,7 +311,7 @@ if MAKE_ANIMATION :
 	os.chdir(img_dir)
 	subprocess.call('dir /b /o *.png > files.txt', shell=True)	
 	
-	animationname = "Animation_" + foldername[:-1].lower() + ".avi"
+	animationname = "Animation_" + foldername[:-1].lower() + "_" + scalar_to_export +  ".avi"
 	command = ('mencoder',
 			   'mf://@files.txt', #works only in the current dir
 			   '-mf',
