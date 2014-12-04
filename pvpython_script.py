@@ -29,7 +29,7 @@ print docstring
 
 dirname =  r"U:\Intel_Cluster_Cases\5_SMACS_LS"
 foldername = r"A_retrait"  # A_retrait # B5_boussinesq
-filename = "out_thermique_"
+vtu_name = "out_thermique_"
 
 # Time options to determine the correct VTU file names
 t_start=0
@@ -50,7 +50,7 @@ EXPORT_PNG = 	True	# True # False
 CROP_PNG = 		True	# True # False
 MAKE_ANIMATION=	True	# True # False
 OFFSCREEN_RENDERING = True
-fps=12
+fps=10
 LOW = [800,600]
 HIGH = [1280,1024]
 RESOLUTION = HIGH # LOW #  HIGH
