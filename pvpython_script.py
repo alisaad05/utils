@@ -27,8 +27,8 @@ print docstring
 # INPUT OPTIONS (paths, options ...)
 # ==============================
 
-dirname =  "U:\\Intel_Cluster_Cases\\5_SMACS_LS\\"
-foldername = "A_retrait\\"  # A_retrait # B5_boussinesq
+dirname =  r"U:\Intel_Cluster_Cases\5_SMACS_LS"
+foldername = r"A_retrait"  # A_retrait # B5_boussinesq
 filename = "out_thermique_"
 
 # Time options to determine the correct VTU file names
@@ -59,7 +59,7 @@ RESOLUTION = HIGH # LOW #  HIGH
 
 P0_fields_list = []
 #TODO: when the class pvtools will be created, check the number of scalar in this list and create a LUT for each one
-P1_fields_list = [scalar_to_export]
+P1_fields_list = [scalar_to_export, "d_interface_filtered", "d_interface"]
 
 #CUSTOM COLORS
 # ============
@@ -131,8 +131,14 @@ if EXPORT_PNG:
 	# START FROM VTU FILES
 	# =====================
 	print("\nREADING VTU...")
-	dir = dirname + foldername + "resultatsVTU\\" + filename
-	reader = XMLUnstructuredGridReader( FileName= [dir+str(i).rjust(5,'0')+'.vtu' for i in range(t_start,t_end,frequency_VTU)]) #I f***ing love python generators and list comprehension !!!
+	filepath = dirname + "\\" + foldername + "\\" + "resultatsVTU\\"
+	filenamelist = [filepath + vtu_name + str(i).rjust(5,'0')+'.vtu' for i in range(t_start,t_end,frequency_VTU)] #I f***ing love python generators and list comprehension !!!
+	# Make sure files exist (make sure user has not given wrong t_start or t_end parameters)
+	for f in filenamelist: 
+		if os.path.isfile(f) == False: 
+			raise Exception("\n\nFile " + f + " does not exist ... ! \nCheck the values of t_start, t_end and frequency_VTU\n\n" )
+	reader = XMLUnstructuredGridReader( FileName= filenamelist )
+
 	# P1 FIELDS
 	reader.PointArrayStatus = P1_fields_list
 	# P0 FIELDS
@@ -246,10 +252,31 @@ if EXPORT_PNG:
 	ScalarBar.LookupTable = Scalar_LUT
 	print("\nFinished Processing VTU files'")
 
-
+	# DRAW FILTERED LS CONTOUR
+	ContourLS = Contour(Input= reader)
+	ContourLS_Display = Show(ContourLS, view)
+	ColorBy(ContourLS_Display, None)
+	ContourLS.PointMergeMethod = 'Uniform Binning'
+	ContourLS.ContourBy = ['POINTS', 'd_interface_filtered']
+	ContourLS.Isosurfaces = [0.0]
+	ContourLS_Display.LineWidth = 3.0 
+	ContourLS_Display.DiffuseColor = BLACK 
+	Render()
+	
+	# DRAW INITIAL LS CONTOUR
+	ContourLS2 = Contour(Input= reader)
+	ContourLS2_Display = Show(ContourLS2, view)
+	ColorBy(ContourLS2_Display, None)
+	ContourLS2.PointMergeMethod = 'Uniform Binning'
+	ContourLS2.ContourBy = ['POINTS', 'd_interface']
+	ContourLS2.Isosurfaces = [0.0]
+	ContourLS2_Display.LineWidth = 1.0 
+	ContourLS2_Display.DiffuseColor = RED 
+	Render()
+	
 # LOOP OVER FILES AND EXPORT PNG
 # ================================
-img_dir = dirname + foldername + 'img\\'
+img_dir = dirname + "\\" + foldername + "\\" + "img\\"
 
 if EXPORT_PNG :
 	print("\n\nEXPORTING ...\n")
@@ -311,7 +338,7 @@ if MAKE_ANIMATION :
 	os.chdir(img_dir)
 	subprocess.call('dir /b /o *.png > files.txt', shell=True)	
 	
-	animationname = "Animation_" + foldername[:-1].lower() + "_" + scalar_to_export +  ".avi"
+	animationname = dirname + "\\Animation_" + foldername.lower() + "_" + scalar_to_export + "_" + str(fps) + "fps.avi"
 	command = ('mencoder',
 			   'mf://@files.txt', #works only in the current dir
 			   '-mf',
@@ -323,7 +350,7 @@ if MAKE_ANIMATION :
 			   '-oac',
 			   'copy',
 			   '-o',
-			   dirname + animationname )   
+			   animationname )   
 	subprocess.call(command)	
 	
 	os.chdir(dirname)	
