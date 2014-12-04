@@ -28,17 +28,12 @@ print docstring
 # ==============================
 
 dirname =  r"U:\Intel_Cluster_Cases\5_SMACS_LS"
-foldername = r"A_retrait"  # A_retrait # B5_boussinesq
+foldername = r"B8_boussinesq"  # A_retrait # B5_boussinesq
 vtu_name = "out_thermique_"
-
-# Time options to determine the correct VTU file names
-t_start=0
-t_end=1001
-frequency_VTU=10
 
 scalar_to_export = 'Vitesse'  # FractionPair # Vitesse # Pression
 min_value = 0.0
-max_value = 5e-5
+max_value = 1e-3
 
 SHOW_CENTER_AXIS = False
 SHOW_ORIENTATION_AXIS = True
@@ -131,13 +126,22 @@ if EXPORT_PNG:
 	# START FROM VTU FILES
 	# =====================
 	print("\nREADING VTU...")
-	filepath = dirname + "\\" + foldername + "\\" + "resultatsVTU\\"
-	filenamelist = [filepath + vtu_name + str(i).rjust(5,'0')+'.vtu' for i in range(t_start,t_end,frequency_VTU)] #I f***ing love python generators and list comprehension !!!
+	filedir = dirname + "\\" + foldername + "\\" + "resultatsVTU\\"
+	
+	# ----  DEPRECATED FILE INPUT ---- 
+	# Time options to determine the correct VTU file names
+	# t_start=0
+	# t_end=80
+	# frequency_VTU=1
+	# filenamelist = [filedir + vtu_name + str(i).rjust(5,'0')+'.vtu' for i in range(t_start,t_end,frequency_VTU)] #I f***ing love python generators and list comprehension !!!
 	# Make sure files exist (make sure user has not given wrong t_start or t_end parameters)
-	for f in filenamelist: 
-		if not os.path.isfile(f): 
-			raise Exception("\n\nFile " + f + " does not exist ... ! \nCheck the values of t_start, t_end and frequency_VTU\n\n" )
-	reader = XMLUnstructuredGridReader( FileName= filenamelist )
+	# for f in filenamelist: 
+		# if not os.path.isfile(f): 
+			# raise Exception("\n\nFile " + f + " does not exist ... ! \nCheck the values of t_start, t_end and frequency_VTU\n\n" )
+	# ------------------------------
+	filenamelist = os.listdir(filedir)
+	filepathlist = [ filedir + name for name in filenamelist ]
+	reader = XMLUnstructuredGridReader( FileName= filepathlist )
 
 	# P1 FIELDS
 	reader.PointArrayStatus = P1_fields_list
