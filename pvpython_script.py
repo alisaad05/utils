@@ -135,7 +135,7 @@ if EXPORT_PNG:
 	filenamelist = [filepath + vtu_name + str(i).rjust(5,'0')+'.vtu' for i in range(t_start,t_end,frequency_VTU)] #I f***ing love python generators and list comprehension !!!
 	# Make sure files exist (make sure user has not given wrong t_start or t_end parameters)
 	for f in filenamelist: 
-		if os.path.isfile(f) == False: 
+		if not os.path.isfile(f): 
 			raise Exception("\n\nFile " + f + " does not exist ... ! \nCheck the values of t_start, t_end and frequency_VTU\n\n" )
 	reader = XMLUnstructuredGridReader( FileName= filenamelist )
 
