@@ -28,22 +28,25 @@ print docstring
 # ==============================
 
 dirname =  r"U:\Intel_Cluster_Cases\5_SMACS_LS"
-foldername = r"B8_boussinesq"  # A_retrait # B5_boussinesq
+foldername = r"A_retrait_densiteair_2000"  # A_retrait # B5_boussinesq
 vtu_name = "out_thermique_"
 
 scalar_to_export = 'Vitesse'  # FractionPair # Vitesse # Pression
 min_value = 0.0
-max_value = 1e-3
+max_value = 6e-5
 
 SHOW_CENTER_AXIS = False
 SHOW_ORIENTATION_AXIS = True
 
 # OUTPUT OPTIONS (DISABLE ALL IF RUNNING IN PARAVIEW'S PYTHON SHELL)
 # ====================================================================
+COPY_MTC = 		True	# True # False
 SHOW_TIME = 	True	# True # False
 EXPORT_PNG = 	True	# True # False
-CROP_PNG = 		True	# True # False
-MAKE_ANIMATION=	True	# True # False
+CROP_PNG = 		False	# True # False
+MAKE_ANIMATION=	False	# True # False
+n=1  # if only (MAKE_ANIMATION=True) then please given the number of the folder containing image files (_IMG#n)
+
 OFFSCREEN_RENDERING = True
 fps=10
 LOW = [800,600]
@@ -54,13 +57,18 @@ RESOLUTION = HIGH # LOW #  HIGH
 
 P0_fields_list = []
 #TODO: when the class pvtools will be created, check the number of scalar in this list and create a LUT for each one
-P1_fields_list = [scalar_to_export, "d_interface_filtered", "d_interface"]
+P1_fields_list = [scalar_to_export, 'd_interface_filtered', 'd_interface', 'FractionLiq']
 
 #CUSTOM COLORS
 # ============
-RED = [1,0,0]
-BLUE = [0,0,1]
-BLACK = [0,0,0]
+RED = 		[1,0,0]
+GREEN = 	[0,1,0]
+BLUE = 		[0,0,1]
+BLACK = 	[0,0,0]
+WHITE = 	[1,1,1]
+MAGENTA = 	[1,0,1]
+CYAN = 		[0,1,1]
+YELLOW = 	[1,1,0]
 
 # PRESETS (painfully defined by hand :))
 # ========
@@ -112,6 +120,7 @@ def custom_view(VIEW):
 	
 import subprocess
 import os
+import shutil
 
 if EXPORT_PNG: 
 	from paraview.simple import *
@@ -126,7 +135,8 @@ if EXPORT_PNG:
 	# START FROM VTU FILES
 	# =====================
 	print("\nREADING VTU...")
-	filedir = dirname + "\\" + foldername + "\\" + "resultatsVTU\\"
+	mtcfolderpath = dirname + "\\" + foldername + "\\"
+	filedir =  mtcfolderpath + "resultatsVTU\\"
 	
 	# ----  DEPRECATED FILE INPUT ---- 
 	# Time options to determine the correct VTU file names
@@ -139,10 +149,11 @@ if EXPORT_PNG:
 		# if not os.path.isfile(f): 
 			# raise Exception("\n\nFile " + f + " does not exist ... ! \nCheck the values of t_start, t_end and frequency_VTU\n\n" )
 	# ------------------------------
-	filenamelist = os.listdir(filedir)
+	# filenamelist = os.listdir(filedir) (deprecated because it includes subfolders)
+	filenamelist = [name for name in os.listdir(filedir) if not os.path.isdir(filedir+name)]
 	filepathlist = [ filedir + name for name in filenamelist ]
 	reader = XMLUnstructuredGridReader( FileName= filepathlist )
-
+	# print filepathlist
 	# P1 FIELDS
 	reader.PointArrayStatus = P1_fields_list
 	# P0 FIELDS
@@ -278,15 +289,45 @@ if EXPORT_PNG:
 	ContourLS2_Display.DiffuseColor = RED 
 	Render()
 	
+	# DRAW SOLIDIFICATION FRONT CONTOUR
+	ContourSF = Contour(Input= reader)
+	Display_ContourSF = Show(ContourSF, view)
+	ColorBy(Display_ContourSF, None)
+	ContourSF.PointMergeMethod = 'Uniform Binning'
+	ContourSF.ContourBy = ['POINTS', 'FractionLiq']
+	ContourSF.Isosurfaces = [0.999]
+	Display_ContourSF.LineWidth = 2.0 
+	Display_ContourSF.DiffuseColor = CYAN # YELLOW
+	Render()
+	
 # LOOP OVER FILES AND EXPORT PNG
 # ================================
-img_dir = dirname + "\\" + foldername + "\\" + "img\\"
+
+# CREATE NEW DIRECTORY FOR IMAGES
+
+img_dir = mtcfolderpath + "_IMG" + str(n) + "\\"
+# print img_dir+"\n\n"
 
 if EXPORT_PNG :
-	print("\n\nEXPORTING ...\n")
-	if not os.path.exists(img_dir):
-		os.makedirs(img_dir)
 	
+	while True:
+		if os.path.exists(img_dir): 
+			n=n+1
+			img_dir = mtcfolderpath + "_IMG"+str(n)+"\\"
+		else: break
+	# print img_dir+"\n\n"
+	os.makedirs(img_dir)
+	
+	if COPY_MTC:
+		print("\n\nCOPYING MTC FILES ...\n")
+		destination = img_dir + "MTC_FILES\\"
+		os.makedirs(destination)
+		mtc_files = [ a_file for a_file in os.listdir(mtcfolderpath) if a_file.endswith((".dat", ".mtc", ".t", ".sh", ".sge")) ]
+		# for f in mtc_files: print f
+		for name in mtc_files: shutil.copy(mtcfolderpath+name, destination)
+		print("\nFinished copying into subdirectory 'MTC_FILES'")
+	
+	print("\n\nEXPORTING ...\n")	
 	for t in timesteps:
 		# if t > 4: break
 		view.ViewTime = t	
