@@ -28,7 +28,7 @@ print docstring
 # ==============================
 
 dirname =  r"U:\Intel_Cluster_Cases\5_SMACS_LS"
-foldername = r"A_retrait_densiteair_2000"  # A_retrait # B5_boussinesq
+foldername = r"A_retrait_densiteair_2000_CorrectionMedale"  # A_retrait # B5_boussinesq
 vtu_name = "out_thermique_"
 
 scalar_to_export = 'Vitesse'  # FractionPair # Vitesse # Pression
@@ -43,8 +43,8 @@ SHOW_ORIENTATION_AXIS = True
 COPY_MTC = 		True	# True # False
 SHOW_TIME = 	True	# True # False
 EXPORT_PNG = 	True	# True # False
-CROP_PNG = 		False	# True # False
-MAKE_ANIMATION=	False	# True # False
+CROP_PNG = 		True	# True # False
+MAKE_ANIMATION=	True	# True # False
 n=1  # if only (MAKE_ANIMATION=True) then please given the number of the folder containing image files (_IMG#n)
 
 OFFSCREEN_RENDERING = True
