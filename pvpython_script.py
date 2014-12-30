@@ -27,21 +27,23 @@ print docstring
 # INPUT OPTIONS (paths, options ...)
 # ==============================
 
-dirname =  r"U:\Intel_Cluster_Cases\5_SMACS_LS"
-foldername = r"A_retrait_densiteair_2000_CorrectionMedale"  # A_retrait # B5_boussinesq
+dirname =  r"C:\Users\RASPI\Google Drive\WORK Shared Folder\Cimlib Surface tension\A_TEMPUS_noforces_drive\results"
+foldername = r"case1_h40_dt0.01_without_surfacetension_thickmix"  
 vtu_name = "out_thermique_"
 
 scalar_to_export = 'Vitesse'  # FractionPair # Vitesse # Pression
 min_value = 0.0
-max_value = 6e-5
+max_value = 0.5
 
 SHOW_CENTER_AXIS = False
 SHOW_ORIENTATION_AXIS = True
 
 # OUTPUT OPTIONS (DISABLE ALL IF RUNNING IN PARAVIEW'S PYTHON SHELL)
 # ====================================================================
-COPY_MTC = 		True	# True # False
+COPY_MTC = 		False	# True # False
 SHOW_TIME = 	True	# True # False
+SHOW_SCALAR = 	False	# True # False
+SHOW_VECTORS = 	True	# True # False
 EXPORT_PNG = 	True	# True # False
 CROP_PNG = 		True	# True # False
 MAKE_ANIMATION=	True	# True # False
@@ -51,13 +53,13 @@ OFFSCREEN_RENDERING = True
 fps=10
 LOW = [800,600]
 HIGH = [1280,1024]
-RESOLUTION = HIGH # LOW #  HIGH
+RESOLUTION = LOW # HIGH #  HIGH
 
 # ==========================================================================================================================
 
 P0_fields_list = []
 #TODO: when the class pvtools will be created, check the number of scalar in this list and create a LUT for each one
-P1_fields_list = [scalar_to_export, 'd_interface_filtered', 'd_interface', 'FractionLiq']
+P1_fields_list = [scalar_to_export, 'd_interface_regular', 'd_interface']
 
 #CUSTOM COLORS
 # ============
@@ -136,7 +138,7 @@ if EXPORT_PNG:
 	# =====================
 	print("\nREADING VTU...")
 	mtcfolderpath = dirname + "\\" + foldername + "\\"
-	filedir =  mtcfolderpath + "resultatsVTU\\"
+	filedir =  mtcfolderpath #+ "resultatsVTU\\"
 	
 	# ----  DEPRECATED FILE INPUT ---- 
 	# Time options to determine the correct VTU file names
@@ -178,14 +180,16 @@ if EXPORT_PNG:
 	#Offscreen rendering to be specified before calling the first Render()
 	view.UseOffscreenRendering= int(OFFSCREEN_RENDERING)
 	view.UseOffscreenRenderingForScreenshots= int(OFFSCREEN_RENDERING)
-	custom_view(view) # Z_plus_view # custom_view
+	# Z_plus_view(view) # Z_plus_view # custom_view
 	Render()
 
 	# SHOW TIME ANNOTATION
 	# ======================
 	if SHOW_TIME :
 		annTime = AnnotateTimeFilter(reader)
-		annTime.Format = '$Time: \\hspace{1} %1.0f \\hspace{1} sec$'
+		annTime.Format = '$Time: \\hspace{1} %1.2f \\hspace{1} sec$'
+		annTime.Scale = 0.05
+		annTime.Shift = 0.0
 		annTimeDisplay = GetDisplayProperties(annTime, view=view)
 		annTimeDisplay.FontFamily= 'Arial' # Arial # Times # Courier
 		annTimeDisplay.FontSize= 10
@@ -199,22 +203,54 @@ if EXPORT_PNG:
 		annTimeDisplay.Position = [0.04, 0.22]
 		Show(annTime)
 
+		
+	# DRAW FILTERED LS CONTOUR
+	ContourLS = Contour(Input= reader)
+	ContourLS_Display = Show(ContourLS, view)
+	ContourLS.PointMergeMethod = 'Uniform Binning'
+	ContourLS.ContourBy = ['POINTS', 'd_interface_regular']
+	ContourLS.Isosurfaces = [0.0]
+	ContourLS_Display.LineWidth = 3.0 
+	ContourLS_Display.DiffuseColor = BLACK 
+	Render()
+	
+	# DRAW INITIAL LS CONTOUR
+	ContourLS2 = Contour(Input= reader)
+	ContourLS2_Display = Show(ContourLS2, view)
+	ContourLS2.PointMergeMethod = 'Uniform Binning'
+	ContourLS2.ContourBy = ['POINTS', 'd_interface']
+	ContourLS2.Isosurfaces = [0.0]
+	ContourLS2_Display.LineWidth = 1.0 
+	ContourLS2_Display.DiffuseColor = RED 
+	Render()
+	
+	# DRAW SOLIDIFICATION FRONT CONTOUR
+	# ContourSF = Contour(Input= reader)
+	# Display_ContourSF = Show(ContourSF, view)
+	# ColorBy(Display_ContourSF, None)
+	# ContourSF.PointMergeMethod = 'Uniform Binning'
+	# ContourSF.ContourBy = ['POINTS', 'FractionLiq']
+	# ContourSF.Isosurfaces = [0.999]
+	# Display_ContourSF.LineWidth = 2.0 
+	# Display_ContourSF.DiffuseColor = CYAN # YELLOW
+	# Render()
+	
 	# DISPLAY VELOCITY FIELD (ONLY FOR VTU, DO NOT USE FOR STATE FILES)
 	# =================================================================
 	# SHOW SCALAR OR VECTOR
 	
 	Scalar_LUT = GetLookupTableForArray( scalar_to_export, 3, 
 											Discretize=0, 
-											RGBPoints= RainbowBlendedWhite ,   # BlueToRedRainbow (HSV) # RainbowDesaturated (HSV) # RainbowBlendedWhite (RGB)
+											RGBPoints= RainbowDesaturated ,   # BlueToRedRainbow (HSV) # RainbowDesaturated (HSV) # RainbowBlendedWhite (RGB)
 											VectorMode='Magnitude', 
 											# NanColor=[0.498039215686275, 0.498039215686275, 0.498039215686275], 
 											ColorSpace='RGB', # RGB # HSV # Lab # Diverging
 											ScalarRangeInitialized=1.0, 
 											AllowDuplicateScalars=1 
 										)
-
-	data_representation.ColorArrayName = scalar_to_export
-	data_representation.LookupTable = Scalar_LUT
+	if SHOW_SCALAR:
+		data_representation.ColorArrayName = scalar_to_export							
+		data_representation.LookupTable = Scalar_LUT
 
 	Scalar_LUT.RescaleTransferFunction(min_value, max_value)
 	Scalar_LUT.LockScalarRange = 1
@@ -265,40 +301,26 @@ if EXPORT_PNG:
 						 
 	GetRenderView().Representations.append(ScalarBar)
 	ScalarBar.LookupTable = Scalar_LUT
+		
+	if SHOW_VECTORS :
+		glyph = Glyph(reader, GlyphType='Arrow')
+		glyph.Vectors = ['POINTS', 'Vitesse']
+		glyph.ScaleMode = 'vector'
+		glyph.ScaleFactor = 0.2
+		glyph.GlyphMode = 'Uniform Spatial Distribution'
+		glyph.MaximumNumberOfSamplePoints = 5000
+		# glyph.GlyphMode = ''Every Nth Point'
+		# glyph.Stride = 10
+		
+		Display_glyph = Show(glyph, view)
+		Display_glyph.ColorArrayName = ['POINTS', 'Vitesse']
+		Display_glyph.LookupTable = Scalar_LUT
+		Display_glyph.Opacity = 0.75
+		Display_glyph.SetScalarBarVisibility(view, True)
+		# ColorBy(Display_glyph, None)
+		# Display_glyph.DiffuseColor = CYAN # CYAN # YELLOW # BLACK
+	
 	print("\nFinished Processing VTU files'")
-
-	# DRAW FILTERED LS CONTOUR
-	ContourLS = Contour(Input= reader)
-	ContourLS_Display = Show(ContourLS, view)
-	ColorBy(ContourLS_Display, None)
-	ContourLS.PointMergeMethod = 'Uniform Binning'
-	ContourLS.ContourBy = ['POINTS', 'd_interface_filtered']
-	ContourLS.Isosurfaces = [0.0]
-	ContourLS_Display.LineWidth = 3.0 
-	ContourLS_Display.DiffuseColor = BLACK 
-	Render()
-	
-	# DRAW INITIAL LS CONTOUR
-	ContourLS2 = Contour(Input= reader)
-	ContourLS2_Display = Show(ContourLS2, view)
-	ColorBy(ContourLS2_Display, None)
-	ContourLS2.PointMergeMethod = 'Uniform Binning'
-	ContourLS2.ContourBy = ['POINTS', 'd_interface']
-	ContourLS2.Isosurfaces = [0.0]
-	ContourLS2_Display.LineWidth = 1.0 
-	ContourLS2_Display.DiffuseColor = RED 
-	Render()
-	
-	# DRAW SOLIDIFICATION FRONT CONTOUR
-	ContourSF = Contour(Input= reader)
-	Display_ContourSF = Show(ContourSF, view)
-	ColorBy(Display_ContourSF, None)
-	ContourSF.PointMergeMethod = 'Uniform Binning'
-	ContourSF.ContourBy = ['POINTS', 'FractionLiq']
-	ContourSF.Isosurfaces = [0.999]
-	Display_ContourSF.LineWidth = 2.0 
-	Display_ContourSF.DiffuseColor = CYAN # YELLOW
-	Render()
 	
 # LOOP OVER FILES AND EXPORT PNG
 # ================================
@@ -331,7 +353,7 @@ if EXPORT_PNG :
 	for t in timesteps:
 		# if t > 4: break
 		view.ViewTime = t	
-		custom_view(view)
+		# Z_plus_view(view) # Z_plus_view # custom_view
 		# data_representation.RescaleTransferFunctionToDataRange()
 		Render() 
 		
