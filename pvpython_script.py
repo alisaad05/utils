@@ -15,7 +15,7 @@ docstring= """
 * Supports selective data loading, i.e. user can specify the fields
   to process instead of loading all data from the VTU file
 
-* Use with pvpython.exe version 4.2 located in the "bin" folder 
+* Use with pvpython.exe version 4.2 or newer, located in the "bin" folder 
   of Paraview installation (mainly for the .tex rendering and com-
   patibility of some functions e.g. SaveScreenshot)
 
@@ -26,14 +26,13 @@ print docstring
 
 # INPUT OPTIONS (paths, options ...)
 # ==============================
-
-dirname =  r"C:\Users\RASPI\Google Drive\WORK Shared Folder\Cimlib Surface tension\A_TEMPUS_noforces_drive\results"
-foldername = r"case1_h40_dt0.01_without_surfacetension_thickmix"  
-vtu_name = "out_thermique_"
+dirname =  r"C:\local\ali.saad\0_Bureau Norwich\THESIS DOCUMENTS\Tutorials\Animation creation with Pvpython"  # directory where you put several MTC folders
+foldername = r"MTC_case_1"    # MTC_case_1 # MTC_case_2 # MTC_case_3   # folder name of the MTC case
+vtu_name = "out_thermique_" # needed ONLY if a file frequency reading is given
 
 scalar_to_export = 'Vitesse'  # FractionPair # Vitesse # Pression
 min_value = 0.0
-max_value = 0.5
+max_value = 1e-1
 
 SHOW_CENTER_AXIS = False
 SHOW_ORIENTATION_AXIS = True
@@ -41,25 +40,28 @@ SHOW_ORIENTATION_AXIS = True
 # OUTPUT OPTIONS (DISABLE ALL IF RUNNING IN PARAVIEW'S PYTHON SHELL)
 # ====================================================================
 COPY_MTC = 		False	# True # False
-SHOW_TIME = 	True	# True # False
-SHOW_SCALAR = 	False	# True # False
-SHOW_VECTORS = 	True	# True # False
 EXPORT_PNG = 	True	# True # False
-CROP_PNG = 		True	# True # False
+CROP_PNG = 		False	# True # False
 MAKE_ANIMATION=	True	# True # False
+SHOW_TIME = 	True	# True # False
+
 n=1  # if only (MAKE_ANIMATION=True) then please given the number of the folder containing image files (_IMG#n)
+DEBUG = False # True # False
 
 OFFSCREEN_RENDERING = True
 fps=10
 LOW = [800,600]
 HIGH = [1280,1024]
-RESOLUTION = LOW # HIGH #  HIGH
+RESOLUTION = HIGH # LOW #  HIGH
+
+
 
 # ==========================================================================================================================
-
+# =======================================		    CODE				====================================================
+# ==========================================================================================================================
 P0_fields_list = []
 #TODO: when the class pvtools will be created, check the number of scalar in this list and create a LUT for each one
-P1_fields_list = [scalar_to_export, 'd_interface_regular', 'd_interface']
+P1_fields_list = [scalar_to_export, 'd_interface_regular', 'd_interface', 'FractionLiq']
 
 #CUSTOM COLORS
 # ============
@@ -124,6 +126,9 @@ import subprocess
 import os
 import shutil
 
+mtcfolderpath = dirname + "\\" + foldername + "\\"
+filedir =  mtcfolderpath + "resultatsVTU\\"
+	
 if EXPORT_PNG: 
 	from paraview.simple import *
 
@@ -137,14 +142,14 @@ if EXPORT_PNG:
 	# START FROM VTU FILES
 	# =====================
 	print("\nREADING VTU...")
-	mtcfolderpath = dirname + "\\" + foldername + "\\"
-	filedir =  mtcfolderpath #+ "resultatsVTU\\"
-	
+	if(DEBUG): 
+		print("mtcfolderpath: " + mtcfolderpath)
+		print("filedir: " + filedir)
 	# ----  DEPRECATED FILE INPUT ---- 
 	# Time options to determine the correct VTU file names
-	# t_start=0
-	# t_end=80
-	# frequency_VTU=1
+	t_start=100
+	t_end=150
+	frequency_VTU=1
 	# filenamelist = [filedir + vtu_name + str(i).rjust(5,'0')+'.vtu' for i in range(t_start,t_end,frequency_VTU)] #I f***ing love python generators and list comprehension !!!
 	# Make sure files exist (make sure user has not given wrong t_start or t_end parameters)
 	# for f in filenamelist: 
@@ -180,16 +185,17 @@ if EXPORT_PNG:
 	#Offscreen rendering to be specified before calling the first Render()
 	view.UseOffscreenRendering= int(OFFSCREEN_RENDERING)
 	view.UseOffscreenRenderingForScreenshots= int(OFFSCREEN_RENDERING)
-	# Z_plus_view(view) # Z_plus_view # custom_view
+	custom_view(view) # Z_plus_view # custom_view
 	Render()
 
 	# SHOW TIME ANNOTATION
 	# ======================
 	if SHOW_TIME :
 		annTime = AnnotateTimeFilter(reader)
-		annTime.Format = '$Time: \\hspace{1} %1.2f \\hspace{1} sec$'
-		annTime.Scale = 0.05
-		annTime.Shift = 0.0
+		annTime.Format = '$Time: \\hspace{1} %1.1f \\hspace{1} sec$'
+		annTime.Scale = 0.1  	# multiplied by time
+		annTime.Shift = 0.0		# added to time
+		
 		annTimeDisplay = GetDisplayProperties(annTime, view=view)
 		annTimeDisplay.FontFamily= 'Arial' # Arial # Times # Courier
 		annTimeDisplay.FontSize= 10
@@ -203,54 +209,22 @@ if EXPORT_PNG:
 		annTimeDisplay.Position = [0.04, 0.22]
 		Show(annTime)
 
-		
-	# DRAW FILTERED LS CONTOUR
-	ContourLS = Contour(Input= reader)
-	ContourLS_Display = Show(ContourLS, view)
-	ContourLS.PointMergeMethod = 'Uniform Binning'
-	ContourLS.ContourBy = ['POINTS', 'd_interface_regular']
-	ContourLS.Isosurfaces = [0.0]
-	ContourLS_Display.LineWidth = 3.0 
-	ContourLS_Display.DiffuseColor = BLACK 
-	Render()
-	
-	# DRAW INITIAL LS CONTOUR
-	ContourLS2 = Contour(Input= reader)
-	ContourLS2_Display = Show(ContourLS2, view)
-	ContourLS2.PointMergeMethod = 'Uniform Binning'
-	ContourLS2.ContourBy = ['POINTS', 'd_interface']
-	ContourLS2.Isosurfaces = [0.0]
-	ContourLS2_Display.LineWidth = 1.0 
-	ContourLS2_Display.DiffuseColor = RED 
-	Render()
-	
-	# DRAW SOLIDIFICATION FRONT CONTOUR
-	# ContourSF = Contour(Input= reader)
-	# Display_ContourSF = Show(ContourSF, view)
-	# ColorBy(Display_ContourSF, None)
-	# ContourSF.PointMergeMethod = 'Uniform Binning'
-	# ContourSF.ContourBy = ['POINTS', 'FractionLiq']
-	# ContourSF.Isosurfaces = [0.999]
-	# Display_ContourSF.LineWidth = 2.0 
-	# Display_ContourSF.DiffuseColor = CYAN # YELLOW
-	# Render()
-	
 	# DISPLAY VELOCITY FIELD (ONLY FOR VTU, DO NOT USE FOR STATE FILES)
 	# =================================================================
 	# SHOW SCALAR OR VECTOR
 	
 	Scalar_LUT = GetLookupTableForArray( scalar_to_export, 3, 
 											Discretize=0, 
-											RGBPoints= RainbowDesaturated ,   # BlueToRedRainbow (HSV) # RainbowDesaturated (HSV) # RainbowBlendedWhite (RGB)
+											RGBPoints= RainbowBlendedWhite ,   # BlueToRedRainbow (HSV) # RainbowDesaturated (HSV) # RainbowBlendedWhite (RGB)
 											VectorMode='Magnitude', 
 											# NanColor=[0.498039215686275, 0.498039215686275, 0.498039215686275], 
 											ColorSpace='RGB', # RGB # HSV # Lab # Diverging
 											ScalarRangeInitialized=1.0, 
 											AllowDuplicateScalars=1 
 										)
-	if SHOW_SCALAR:
-		data_representation.ColorArrayName = scalar_to_export							
-		data_representation.LookupTable = Scalar_LUT
+
+	data_representation.ColorArrayName = scalar_to_export
+	data_representation.LookupTable = Scalar_LUT
 
 	Scalar_LUT.RescaleTransferFunction(min_value, max_value)
 	Scalar_LUT.LockScalarRange = 1
@@ -266,14 +240,14 @@ if EXPORT_PNG:
 	ScalarBar.Position = [0.75, 0.3] # this is position
 	ScalarBar.Position2 = [0.2, 0.35] # this is size
 	ScalarBar.Orientation = 'Vertical' # Horizontal # Vertical
-	ScalarBar.Title = scalar_to_export
+	ScalarBar.Title = '$IHM$' # <<< USER
+	ScalarBar.ComponentTitle = '[m/s]' # <<< USER	
 	ScalarBar.TitleBold = 0
 	ScalarBar.TitleItalic = 0
 	ScalarBar.TitleOpacity = 1.0
-	ScalarBar.TitleFontFamily = 'Arial'
+	ScalarBar.TitleFontFamily = 'Arial' # Arial # Times # Courier
 	ScalarBar.TitleShadow = 0
 	ScalarBar.TitleJustification = 'Centered' # Centered # Left s# Right
-	ScalarBar.ComponentTitle = '[m/s]'
 	ScalarBar.TitleColor = BLUE
 	ScalarBar.TitleFontSize = 12
 	ScalarBar.AspectRatio = 12 #25
@@ -287,7 +261,7 @@ if EXPORT_PNG:
 	ScalarBar.LabelColor = RED
 	ScalarBar.LabelFontSize = 10
 	ScalarBar.LabelOpacity = 1.0
-	ScalarBar.LabelFontFamily = 'Arial'
+	ScalarBar.LabelFontFamily = 'Arial' # Arial # Times # Courier
 	ScalarBar.NumberOfLabels = 0
 	ScalarBar.DrawTickMarks = 0
 	ScalarBar.DrawTickLabels = 0
@@ -301,24 +275,39 @@ if EXPORT_PNG:
 						 
 	GetRenderView().Representations.append(ScalarBar)
 	ScalarBar.LookupTable = Scalar_LUT
-		
-	if SHOW_VECTORS :
-		glyph = Glyph(reader, GlyphType='Arrow')
-		glyph.Vectors = ['POINTS', 'Vitesse']
-		glyph.ScaleMode = 'vector'
-		glyph.ScaleFactor = 0.2
-		glyph.GlyphMode = 'Uniform Spatial Distribution'
-		glyph.MaximumNumberOfSamplePoints = 5000
-		# glyph.GlyphMode = ''Every Nth Point'
-		# glyph.Stride = 10
-		
-		Display_glyph = Show(glyph, view)
-		Display_glyph.ColorArrayName = ['POINTS', 'Vitesse']
-		Display_glyph.LookupTable = Scalar_LUT
-		Display_glyph.Opacity = 0.75
-		Display_glyph.SetScalarBarVisibility(view, True)
-		# ColorBy(Display_glyph, None)
-		# Display_glyph.DiffuseColor = CYAN # CYAN # YELLOW # BLACK
+	
+	# DRAW FILTERED LS CONTOUR
+	# ContourLS = Contour(Input= reader)
+	# ContourLS_Display = Show(ContourLS, view)
+	# ColorBy(ContourLS_Display, None)
+	# ContourLS.PointMergeMethod = 'Uniform Binning'
+	# ContourLS.ContourBy = ['POINTS', 'd_interface_regular']
+	# ContourLS.Isosurfaces = [0.0]
+	# ContourLS_Display.LineWidth = 3.0 
+	# ContourLS_Display.DiffuseColor = BLACK 
+	# Render()
+	
+	# DRAW INITIAL LS CONTOUR
+	# ContourLS2 = Contour(Input= reader)
+	# ContourLS2_Display = Show(ContourLS2, view)
+	# ColorBy(ContourLS2_Display, None)
+	# ContourLS2.PointMergeMethod = 'Uniform Binning'
+	# ContourLS2.ContourBy = ['POINTS', 'd_interface']
+	# ContourLS2.Isosurfaces = [0.0]
+	# ContourLS2_Display.LineWidth = 1.0 
+	# ContourLS2_Display.DiffuseColor = RED 
+	# Render()
+	
+	# DRAW SOLIDIFICATION FRONT CONTOUR
+	# ContourSF = Contour(Input= reader)
+	# Display_ContourSF = Show(ContourSF, view)
+	# ColorBy(Display_ContourSF, None)
+	# ContourSF.PointMergeMethod = 'Uniform Binning'
+	# ContourSF.ContourBy = ['POINTS', 'FractionLiq']
+	# ContourSF.Isosurfaces = [0.999]
+	# Display_ContourSF.LineWidth = 2.0 
+	# Display_ContourSF.DiffuseColor = CYAN # YELLOW
+	# Render()
 	
 	print("\nFinished Processing VTU files'")
 	
@@ -327,22 +316,25 @@ if EXPORT_PNG:
 
 # CREATE NEW DIRECTORY FOR IMAGES
 
-img_dir = mtcfolderpath + "_IMG" + str(n) + "\\"
+anim_dir = mtcfolderpath + "Anim" + str(n) + "\\"
+img_dir = anim_dir + "img" + str(n) + "\\"
 # print img_dir+"\n\n"
 
 if EXPORT_PNG :
 	
 	while True:
-		if os.path.exists(img_dir): 
+		if os.path.exists(anim_dir): 
 			n=n+1
-			img_dir = mtcfolderpath + "_IMG"+str(n)+"\\"
+			anim_dir = mtcfolderpath + "Anim" + str(n) + "\\"
+			img_dir = anim_dir + "img\\"
 		else: break
 	# print img_dir+"\n\n"
+	os.makedirs(anim_dir)
 	os.makedirs(img_dir)
-	
+		
 	if COPY_MTC:
 		print("\n\nCOPYING MTC FILES ...\n")
-		destination = img_dir + "MTC_FILES\\"
+		destination = anim_dir + "MTC_FILES\\"
 		os.makedirs(destination)
 		mtc_files = [ a_file for a_file in os.listdir(mtcfolderpath) if a_file.endswith((".dat", ".mtc", ".t", ".sh", ".sge")) ]
 		# for f in mtc_files: print f
@@ -353,7 +345,7 @@ if EXPORT_PNG :
 	for t in timesteps:
 		# if t > 4: break
 		view.ViewTime = t	
-		# Z_plus_view(view) # Z_plus_view # custom_view
+		custom_view(view)
 		# data_representation.RescaleTransferFunctionToDataRange()
 		Render() 
 		
@@ -399,13 +391,13 @@ if CROP_PNG :
 
 	
 if MAKE_ANIMATION :	
-	print("\n\nCREATING ANIMATION ...")
-	if not os.path.exists(img_dir):
-		raise Exception("\nThe directory '" + img_dir + "' does not exist !")
+	print("\n\nCREATING ANIMATION ...\n\n")
+	if not os.path.exists(anim_dir):
+		raise Exception("\nThe directory '" + anim_dir + "' does not exist !")
 	os.chdir(img_dir)
 	subprocess.call('dir /b /o *.png > files.txt', shell=True)	
 	
-	animationname = dirname + "\\Animation_" + foldername.lower() + "_" + scalar_to_export + "_" + str(fps) + "fps.avi"
+	animation_path_name = anim_dir + "\\Animation_" + foldername.lower() + "_" + scalar_to_export + "_" + str(fps) + "fps.avi"
 	command = ('mencoder',
 			   'mf://@files.txt', #works only in the current dir
 			   '-mf',
@@ -417,7 +409,7 @@ if MAKE_ANIMATION :
 			   '-oac',
 			   'copy',
 			   '-o',
-			   animationname )   
+			   animation_path_name )   
 	subprocess.call(command)	
 	
 	os.chdir(dirname)	
